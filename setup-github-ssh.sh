@@ -106,8 +106,14 @@ echo ""
 echo -e "${CYAN}Testing GitHub connection...${NC}"
 echo ""
 
-# Test connection
-if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+# Test connection with timeout and auto-accept host key
+SSH_OUTPUT=$(ssh -T -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new git@github.com 2>&1)
+SSH_RESULT=$?
+
+echo "$SSH_OUTPUT"
+echo ""
+
+if echo "$SSH_OUTPUT" | grep -q "successfully authenticated"; then
     echo -e "${GREEN}✅ SUCCESS! You are authenticated with GitHub!${NC}"
     echo ""
     
