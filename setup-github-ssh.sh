@@ -104,16 +104,46 @@ read -p "Press Enter when you've added the key to GitHub..."
 
 echo ""
 echo -e "${CYAN}Testing GitHub connection...${NC}"
+echo -e "${YELLOW}(This may take a few seconds)${NC}"
 echo ""
 
 # Test connection with timeout and auto-accept host key
 SSH_OUTPUT=$(ssh -T -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new git@github.com 2>&1)
 SSH_RESULT=$?
 
+echo "Connection output:"
 echo "$SSH_OUTPUT"
 echo ""
 
 if echo "$SSH_OUTPUT" | grep -q "successfully authenticated"; then
+    echo -e "${GREEN}✅ SUCCESS! You are authenticated with GitHub!${NC}"
+elif [ $SSH_RESULT -eq 255 ] || echo "$SSH_OUTPUT" | grep -q "Connection timed out"; then
+    echo -e "${RED}❌ Connection timed out${NC}"
+    echo ""
+    echo "This usually means:"
+    echo "  1. No internet connection"
+    echo "  2. Firewall blocking SSH (port 22)"
+    echo "  3. GitHub is unreachable from your network"
+    echo ""
+    echo "Try: ping github.com"
+    exit 1
+elif echo "$SSH_OUTPUT" | grep -q "Permission denied"; then
+    echo -e "${RED}❌ Permission denied - Key not added or not working${NC}"
+    echo ""
+    echo "Please check:"
+    echo "  1. You added the key to https://github.com/settings/keys"
+    echo "  2. You copied the ENTIRE public key"
+    echo "  3. The key was pasted correctly (no line breaks)"
+    echo ""
+    echo "Your public key is:"
+    echo -e "${CYAN}$(cat $SSH_PUB_KEY)${NC}"
+    exit 1
+elif [ $SSH_RESULT -ne 0 ]; then
+    echo -e "${RED}❌ Unexpected error (exit code: $SSH_RESULT)${NC}"
+    echo ""
+    echo "Try running manually: ssh -T git@github.com"
+    exit 1
+else
     echo -e "${GREEN}✅ SUCCESS! You are authenticated with GitHub!${NC}"
     echo ""
     
